@@ -5,12 +5,19 @@ package gish.msc.db;
  * @author   John Miller
  */
 
-import java.io.*;
-import java.util.*;
-import java.util.function.*;
-import java.util.stream.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
-import static java.lang.Boolean.*;
 import static java.lang.System.out;
 
 /****************************************************************************************
@@ -144,6 +151,15 @@ public class Table
     // Public Methods
     //----------------------------------------------------------------------------------
 
+
+    public List<Comparable[]> getTuples() {
+        return tuples;
+    }
+
+    public int getTableSize() {
+        return tuples.size();
+    }
+
     /************************************************************************************
      * Project the tuples onto a lower dimension by keeping only the given attributes.
      * Check whether the original key is included in the projection.
@@ -162,7 +178,11 @@ public class Table
 
         List <Comparable []> rows = new ArrayList <> ();
 
-        //  T O   B E   I M P L E M E N T E D 
+        //  T O   B E   I M P L E M E N T E D //Done
+
+        for (Comparable[] tuple : tuples) {
+            rows.add(extract(tuple, attrs));
+        }
 
         return new Table (name + count++, attrs, colDomain, newKey, rows);
     } // project
@@ -200,7 +220,12 @@ public class Table
 
         List <Comparable []> rows = new ArrayList <> ();
 
-        //  T O   B E   I M P L E M E N T E D 
+        //  T O   B E   I M P L E M E N T E D //Done
+
+        Comparable[] tempTuples = index.get(keyVal);
+        if (tempTuples != null) {
+            rows.add(tempTuples);
+        }
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // select
@@ -220,7 +245,26 @@ public class Table
 
         List <Comparable []> rows = new ArrayList <> ();
 
-        //  T O   B E   I M P L E M E N T E D 
+        //  T O   B E   I M P L E M E N T E D //Done
+
+        for (Comparable[] tuple : tuples) {
+            rows.add(tuple);
+        }
+
+        for (Comparable[] tuple2 : table2.tuples) {
+            boolean exists = false;
+
+            for (Comparable[] tuple : tuples) {
+                if (isEquial(tuple2,tuple)) {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (!exists) {
+                rows.add(tuple2);
+            }
+        }
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // union
@@ -241,7 +285,23 @@ public class Table
 
         List <Comparable []> rows = new ArrayList <> ();
 
-        //  T O   B E   I M P L E M E N T E D 
+        //  T O   B E   I M P L E M E N T E D //Done
+
+        for (Comparable[] tuple : tuples) {
+            boolean exists = false;
+
+            for (Comparable[] tuple1 : table2.tuples) {
+
+                if (isEquial(tuple,tuple1)) {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (!exists) {
+                rows.add(tuple);
+            }
+        }
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // minus
@@ -254,8 +314,8 @@ public class Table
      *
      * #usage movie.join ("studioNo", "name", studio)
      *
-     * @param attribute1  the attributes of this table to be compared (Foreign Key)
-     * @param attribute2  the attributes of table2 to be compared (Primary Key)
+     * @param attributes1  the attributes of this table to be compared (Foreign Key)
+     * @param attributes2  the attributes of table2 to be compared (Primary Key)
      * @param table2      the rhs table in the join operation
      * @return  a table with tuples satisfying the equality predicate
      */
@@ -269,7 +329,62 @@ public class Table
 
         List <Comparable []> rows = new ArrayList <> ();
 
-        //  T O   B E   I M P L E M E N T E D 
+        //  T O   B E   I M P L E M E N T E D //Done
+
+        if (t_attrs.length != u_attrs.length) {
+            System.out.println("Attributes do not have the same number for either table.");
+            return null;
+        }
+
+        int attrLen = this.attribute.length + table2.attribute.length;
+        int domLen = this.domain.length + table2.domain.length;
+
+        String[] jtAttrs = new String[attrLen];
+        Class[] jtDom = new Class[domLen];
+        int attrPos = 0;
+        int domPos = 0;
+        boolean addT;
+
+        for (String attribute1 : this.attribute) {
+            jtAttrs[attrPos] = attribute1;
+            attrPos++;
+        }
+
+        for (int k = 0; k < table2.attribute.length; k++) {
+            jtAttrs[attrPos] = table2.attribute[k] + "2";
+            attrPos++;
+        }
+
+        for (Class domain1 : this.domain) {
+            jtDom[domPos] = domain1;
+            domPos++;
+        }
+
+        for (Class domain1 : table2.domain) {
+            jtDom[domPos] = domain1;
+            domPos++;
+        }
+
+        for (int i = 0; i < this.tuples.size(); i++) {
+            for (int j = 0; j < table2.tuples.size(); j++) {
+                Comparable[] tuple1 = this.tuples.get(i);
+                Comparable[] tuple2 = table2.tuples.get(j);
+                addT = false;
+
+                for (int m = 0; m < t_attrs.length; m++) {
+
+                    if (tuple1[this.col(t_attrs[m])] == tuple2[table2.col(u_attrs[m])]) {
+                        addT = true;
+                    } else {
+                        break;
+                    }
+                }
+
+                if (addT) {
+                    rows.add(ArrayUtil.concat(tuple1, tuple2));
+                }
+            }
+        }
 
         return new Table (name + count++, ArrayUtil.concat (attribute, table2.attribute),
                                           ArrayUtil.concat (domain, table2.domain), key, rows);
@@ -279,8 +394,8 @@ public class Table
      * Join this table and table2 by performing an "equi-join".  Same as above, but implemented
      * using an Index Join algorithm.
      *
-     * @param attribute1  the attributes of this table to be compared (Foreign Key)
-     * @param attribute2  the attributes of table2 to be compared (Primary Key)
+     * @param attributes1  the attributes of this table to be compared (Foreign Key)
+     * @param attributes2  the attributes of table2 to be compared (Primary Key)
      * @param table2      the rhs table in the join operation
      * @return  a table with tuples satisfying the equality predicate
      */
@@ -293,8 +408,8 @@ public class Table
      * Join this table and table2 by performing an "equi-join".  Same as above, but implemented
      * using a Hash Join algorithm.
      *
-     * @param attribute1  the attributes of this table to be compared (Foreign Key)
-     * @param attribute2  the attributes of table2 to be compared (Primary Key)
+     * @param attributes1  the attributes of this table to be compared (Foreign Key)
+     * @param attributes2  the attributes of table2 to be compared (Primary Key)
      * @param table2      the rhs table in the join operation
      * @return  a table with tuples satisfying the equality predicate
      */
@@ -455,6 +570,18 @@ public class Table
     //----------------------------------------------------------------------------------
     // Private Methods
     //----------------------------------------------------------------------------------
+
+    private boolean isEquial(Comparable[] comparables1, Comparable[] comparables2) {
+        if (comparables1 == null || comparables2 == null || comparables1.length != comparables2.length) {
+            return false;
+        }
+        for (int i = 0; i < comparables1.length; i++) {
+            if (!comparables1[i].equals(comparables2[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     /************************************************************************************
      * Determine whether the two tables (this and table2) are compatible, i.e., have

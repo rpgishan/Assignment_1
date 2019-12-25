@@ -1,11 +1,10 @@
 package gish.msc.db;
 
-import static java.lang.System.out;
-import java.util.*;
-
-import static org.junit.Assert.*;
-
 import org.junit.Test;
+
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 public class TableTest
 {
@@ -59,8 +58,8 @@ public class TableTest
 		assertEquals(movie_project.col("title"), 0);
 		assertEquals(movie_project.col("year"), 1);
 		assertEquals(movie_project.col("length"), -1);
-//		assertEquals(movie_project.getTuples().get(0)[0], "Star_Wars");
-//		assertEquals(movie_project.getTuples().get(0).length, 2);
+		assertEquals(movie_project.getTuples().get(0)[0], "Star_Wars");
+		assertEquals(movie_project.getTuples().get(0).length, 2);
 	}
 
 	/**
@@ -71,9 +70,9 @@ public class TableTest
 	{
 		Table movie = this.createMovieTable();
 		Table movie_select = movie.select(new KeyType("Star_Wars"));
-//		assertEquals(movie_select.getTableSize(), 1);
-//		List <Comparable[]> starWars = movie_select.getTuples();
-//		assertEquals(starWars.get(0)[0], "Star_Wars");
+		assertEquals(movie_select.getTableSize(), 1);
+		List <Comparable[]> starWars = movie_select.getTuples();
+		assertEquals(starWars.get(0)[0], "Star_Wars");
 	}
 
 	@Test
@@ -90,9 +89,9 @@ public class TableTest
 			}
         };
 		Table movie_select = movie.select(predicate);
-//		assertEquals(movie_select.getTableSize(), 2);
-//		List <Comparable[]> movies = movie_select.getTuples();
-//		assertEquals(movies.get(0)[0], "Star_Wars");
+		assertEquals(movie_select.getTableSize(), 2);
+		List <Comparable[]> movies = movie_select.getTuples();
+		assertEquals(movies.get(0)[0], "Star_Wars");
 	}
 
 	/**
@@ -104,8 +103,8 @@ public class TableTest
 		Table movie = this.createMovieTable();
 		Table cinema = this.createCinemaTable();
 		Table movie_union = movie.union (cinema);
-//		assertEquals(movie_union.getTableSize(), 5);
-//		List <Comparable[]> movies = movie_union.getTuples();
-//		assertEquals(movies.get(0)[0], "Star_Wars");
+		assertEquals(movie_union.getTableSize(), 5);
+		List <Comparable[]> movies = movie_union.getTuples();
+		assertEquals(movies.get(0)[0], "Star_Wars");
 	}
 }
